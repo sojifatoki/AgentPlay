@@ -8,4 +8,5 @@ dependencies = [
     "litellm>=1.83.0",
     "openai>=3.22.0",
     "python-dotenv>=1.2.3",
+    "tavily-python>=0.8.5",
 ]
