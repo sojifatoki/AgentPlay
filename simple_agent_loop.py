@@ -37,7 +37,8 @@ def run_agent(question: str) -> str:
                       messages=messages,
                       tools=tool_definitions)
 
-        assert isinstance(response, ModelResponse)
+        if not isinstance(response, ModelResponse):
+            raise TypeError(f"Expected a ModelResponse, got {type(response).__name__}")
 
         reply = response.choices[0].message
 
@@ -70,5 +71,7 @@ def run_agent(question: str) -> str:
     return "Stopped: reached the step limit without a final answer"
 
 if __name__ == "__main__":
-    answer = run_agent("What's the latest instance of AI agents escaping their sandbox")
+    question = input("What is your web search based query:  wh")
+    #answer = run_agent("What's the latest instance of AI agents escaping their sandbox")
+    answer = run_agent(question.strip())
     print(answer)
