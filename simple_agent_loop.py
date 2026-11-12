@@ -1,15 +1,19 @@
-import tools # This must come before get_tool_definitions(): running tools.py fills TOOLS
+import tools
+import os # This must come before get_tool_definitions(): running tools.py fills TOOLS
 from typing import Any
-
 from litellm import completion, ModelResponse
-
-
 from tool_registry import get_tool_definitions, run_tool #This has to happen after importing tools
+
+from dotenv import load_dotenv
+load_dotenv()
+
+
+MODEL = os.getenv("MODEL", "openai/gpt-4o-mini") #default model provided if none found/loaded into shell env
 
 
 
 #send tool definitions to the LLM
-MODEL = "gpt-4o-mini" 
+
 MAX_STEPS = 5 #Limits the number of times the loop can run
 SYSTEM_PROMPT = "Assume the role of a helpful assistant. You have access to tools when you need current information."
 
@@ -71,7 +75,7 @@ def run_agent(question: str) -> str:
     return "Stopped: reached the step limit without a final answer"
 
 if __name__ == "__main__":
-    question = input("What is your web search based query:  wh")
+    question = input("What is your web search based query:  ")
     #answer = run_agent("What's the latest instance of AI agents escaping their sandbox")
     answer = run_agent(question.strip())
     print(answer)

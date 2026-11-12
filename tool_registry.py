@@ -37,7 +37,7 @@ def get_tool_definitions() -> list:
     """Turn every @tool function into a definition the LLM can read."""
     return [make_tool_definition(func) for func in TOOLS.values()]
 
-def run_tool(name: str, arguments_json: str) -> str | None:
+def run_tool(name: str, arguments_json: str) -> str:
     """LLM will locate a registered tool by name and call it with its provided argument."""
     func = TOOLS.get(name)
 
@@ -47,12 +47,14 @@ def run_tool(name: str, arguments_json: str) -> str | None:
     try:
         args = json.loads(arguments_json or "{}") 
         result = func(**args) #unpack argument list in function call, same as search_web(query="...")
+
+        #The LLM only accepts text, so have to convert lists/dicts result to a JSON string
+        if isinstance(result, str):
+            return result
+        return json.dumps(result, default=str)   
+          
     except Exception as e:
         return f"Could not call function '{name}': {e} observed"
     
-    #The LLM only accepts text, so have to convert lists/dicts result to a JSON string
-    if isinstance(result, str):
-        return result
-    else:
-        return json.dumps(result)
+
   
