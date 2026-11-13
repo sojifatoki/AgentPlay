@@ -8,13 +8,14 @@ I lead an engineering team and I come from test automation. I kept reading about
 
 You type a question. The agent sends it to the model along with a list of tools it's allowed to use. If the model wants current information it asks for a search, the loop runs the search and hands the results back, and the model tries again. It stops when the model answers without asking for a tool, or after 5 steps, whichever comes first.
 
-There's one tool right now, `search_web`, built on Tavily. It takes a query and optionally a topic (general, news or finance), a time range, a country and a max number of results.
+There's one tool right now, `search_web`, built on Tavily. It takes a query and optionally a topic (general, news or finance), a time range, a country and a max number of results. Results are trimmed to title, URL and a snippet of up to 500 characters before they go back to the model.
 
 ## What's in the repo
 
 - `simple_agent_loop.py` is the loop. `run_agent(question)` is the whole agent.
 - `tool_registry.py` has the `@tool` decorator. It also builds the tool definitions the model reads from each function's signature and docstring, and runs a tool by name when the model asks.
 - `tools.py` is where tools live. Only `search_web` for now.
+- `helper.py` has `trim_results`, which cuts Tavily's results down to the fields the model needs. `MAX_CONTENT_CHARACTER_COUNT` sets the snippet length.
 
 ## Adding a tool
 
@@ -69,15 +70,13 @@ You need a step limit. Mine is `MAX_STEPS = 5`, which is a guess. Without it a c
 
 Import order matters. Tools register themselves when `tools.py` is imported, so `import tools` has to come before `get_tool_definitions()`. Get it backwards and the model gets an empty tool list. That's why there's a comment about it at the top of the loop file.
 
-The whole conversation goes back to the model on every step, and search results are long. Each pass through the loop adds the full search results, as JSON, to the history, so a five-step run costs a lot more than five times a one-step run. I want to trim or summarize results before they go back in.
+The whole conversation goes back to the model on every step, and search results are long. Each pass through the loop adds the search results, as JSON, to the history, so a five-step run costs a lot more than five times a one-step run. Tavily returns more than the model needs (score, raw content and so on), so `search_web` now passes results through `trim_results`, which keeps the title, URL and the first 500 characters of the content. The 500 is a guess, like `MAX_STEPS`. Old results still stay in the history for the rest of the run, so summarizing earlier steps is a possible next step.
 
 Writing the loop myself took the mystery out of it. A tool result is just another message with a `tool` role, tied to the request by an id. The loop is under 50 lines, comments included. Most of the real work is in the edges: schemas, errors, limits.
 
 ## What's next
 
-- An eval set, so the Results table above stops saying TBD
 - Logging for each step, plus token counts and run-time per question
-- Trimming search results before they go back into the conversation
 - More tools, most likely reading files and running tests
 - Memory between questions. Right now every run starts from scratch.
 - Multi-agent system - will most likely create this in another repo
