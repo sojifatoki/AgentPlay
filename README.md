@@ -1,9 +1,3 @@
-<!--
-DRAFT. Delete these comment blocks before you publish.
-Everything outside "Results" comes from the code in this repo.
-Nothing in "Results" has been measured yet, so every TBD is yours to fill in.
--->
-
 # agentPlay
 
 A small AI agent I wrote in plain Python. No LangChain, no agent framework, just a loop, a tool registry and one tool (web search).
@@ -21,8 +15,6 @@ There's one tool right now, `search_web`, built on Tavily. It takes a query and 
 - `simple_agent_loop.py` is the loop. `run_agent(question)` is the whole agent.
 - `tool_registry.py` has the `@tool` decorator. It also builds the tool definitions the model reads from each function's signature and docstring, and runs a tool by name when the model asks.
 - `tools.py` is where tools live. Only `search_web` for now.
-- `llmcall.py` is my first test call straight to OpenAI, from before the loop existed. I kept it.
-- `main.py` is the stub `uv init` made. Not used.
 
 ## Adding a tool
 
@@ -52,7 +44,12 @@ Make a `.env` file with your keys:
 ```
 OPENAI_API_KEY=...
 TAVILY_API_KEY=...
+ANTHROPIC_API_KEY=""
+GEMINI_API_KEY=""
+MODEL=openai/gpt-4o-mini
 ```
+
+There's a `.env.template` you can copy. `MODEL` is optional and defaults to `openai/gpt-4o-mini`.
 
 Then:
 
@@ -60,30 +57,9 @@ Then:
 uv run simple_agent_loop.py
 ```
 
-It'll ask for a question. The model is set by the `MODEL` line in your `.env` file (for example `MODEL=openai/gpt-4o-mini`). Calls go through litellm, so switching providers is just a new model string (for example `MODEL=anthropic/claude-sonnet-5-5`) plus the matching API key (for example `ANTHROPIC_API_KEY`) in `.env`. I've tested this by switching between providers and it works without any code changes.
-
-## Results
-
-<!-- Run the same set of questions a few times and fill this in. Keep the table honest, even if it looks bad. -->
-
-I haven't run a proper test set yet. This is how I plan to do it, and the numbers go in once I have them.
-
-The idea is about 15 questions in four groups, graded by hand:
-
-| Group | Questions | Searched when it should have | Answer correct | Avg steps | Hit the step limit |
-|---|---|---|---|---|---|
-| Needs current info (news, recent releases) | 5 | TBD | TBD | TBD | TBD |
-| Doesn't need search (stable facts) | 5 | TBD | TBD | TBD | TBD |
-| Needs more than one search | 3 | TBD | TBD | TBD | TBD |
-| Bad input or a failing tool | 2 | TBD | TBD | TBD | TBD |
-
-I'm also going to note tokens and wall-clock time per question, since I have no idea yet what a typical run costs.
-
-Overall: TBD.
+It'll prompt you for a question. The model is set by `MODEL` in your `.env` file. Calls go through litellm, so switching providers is just a new model string (for example `MODEL=anthropic/claude-sonnet-5-5`) plus the matching API key (for example `ANTHROPIC_API_KEY`) in `.env`. I've tested this by switching between providers and it works without any code changes.
 
 ## Lessons learned
-
-<!-- These are drawn from the code as it stands. Keep the ones that match what you actually ran into, cut the rest, and add your own. -->
 
 The model only knows what the tool definition tells it. My registry builds that definition from type hints, and anything it doesn't recognize falls back to a plain string. That includes `Literal` and `str | None`. So the model is never told that `topic` has to be general, news or finance. It could send something else and Tavily would reject it. I haven't seen that happen, but nothing stops it. Mapping `Literal` to an enum is the fix.
 
@@ -100,7 +76,8 @@ Writing the loop myself took the mystery out of it. A tool result is just anothe
 ## What's next
 
 - An eval set, so the Results table above stops saying TBD
-- Logging for each step, plus token counts
+- Logging for each step, plus token counts and run-time per question
 - Trimming search results before they go back into the conversation
 - More tools, most likely reading files and running tests
 - Memory between questions. Right now every run starts from scratch.
+- Multi-agent system - will most likely create this in another repo
