@@ -1,5 +1,6 @@
 from tool_registry import tool
 from typing import Literal
+from helper import trim_results
 
 import os
 
@@ -35,6 +36,6 @@ def search_web(query: str, max_results: int = 5, topic: Topic = "general", time_
             **options_country,
         )
         
-        return response.get("results", [])
+        return trim_results(response.get("results", []))
     except Exception as e:
         return f"Error: Search failed - {e}"
