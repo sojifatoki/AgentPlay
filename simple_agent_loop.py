@@ -1,4 +1,5 @@
 import tools
+import json
 import os # This must come before get_tool_definitions(): running tools.py fills TOOLS
 from typing import Any
 from litellm import completion, ModelResponse
@@ -8,7 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-MODEL = os.getenv("MODEL", "openai/gpt-4o-mini") #default model provided if none found/loaded into shell env
+MODEL = os.getenv("MODEL", "openai/gpt-4o-mini")
+DEBUG = os.getenv("DEBUG") == "1"
 
 
 
@@ -33,6 +35,9 @@ def run_agent(question: str) -> str:
 
     #Generate tool schema/tool definition for available tool to pass to the LLM
     tool_definitions = get_tool_definitions()
+
+    if DEBUG:
+        print(f"Dump of current tool_definitions: \n{json.dumps(tool_definitions, indent=2)}")
 
     step = 1
     while step <= MAX_STEPS:
