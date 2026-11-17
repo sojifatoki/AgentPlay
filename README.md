@@ -1,6 +1,6 @@
 # agentPlay
 
-A small AI agent I wrote in plain Python. No LangChain, no agent framework, just a loop, a tool registry and one tool (web search).
+A small AI agent I wrote in plain Python. No LangChain, no agent framework, just a loop, a tool registry and two tools (web search and the current date and time).
 
 I lead an engineering team and I come from test automation. I kept reading about agents and wanted to see what's actually going on inside one, so I built the smallest version I could and worked up from there. It's a learning project, not production code.
 
@@ -8,13 +8,13 @@ I lead an engineering team and I come from test automation. I kept reading about
 
 You type a question. The agent sends it to the model along with a list of tools it's allowed to use. If the model wants current information it asks for a search, the loop runs the search and hands the results back, and the model tries again. It stops when the model answers without asking for a tool, or after 5 steps, whichever comes first.
 
-There's one tool right now, `search_web`, built on Tavily. It takes a query and optionally a topic (general, news or finance), a time range, a country and a max number of results. Results are trimmed to title, URL and a snippet of up to 500 characters before they go back to the model.
+There are two tools right now. `search_web` is built on Tavily. It takes a query and optionally a topic (general, news or finance), a time range, a country and a max number of results. Results are trimmed to title, URL and a snippet of up to 500 characters before they go back to the model. `get_current_datetime` takes no arguments and returns the date, time and timezone, so the model can handle questions like "this week".
 
 ## What's in the repo
 
 - `simple_agent_loop.py` is the loop. `run_agent(question)` is the whole agent.
 - `tool_registry.py` has the `@tool` decorator. It also builds the tool definitions the model reads from each function's signature and docstring, and runs a tool by name when the model asks.
-- `tools.py` is where tools live. Only `search_web` for now.
+- `tools.py` is where tools live. `search_web` and `get_current_datetime` for now.
 - `helper.py` has `trim_results`, which cuts Tavily's results down to the fields the model needs. `MAX_CONTENT_CHARACTER_COUNT` sets the snippet length.
 
 ## Adding a tool
@@ -50,7 +50,7 @@ GEMINI_API_KEY=""
 MODEL=openai/gpt-4o-mini
 ```
 
-There's a `.env.template` you can copy. `MODEL` is optional and defaults to `openai/gpt-4o-mini`.
+There's a `.env.template` you can copy. `MODEL` is optional and defaults to `openai/gpt-4o-mini`. Set `DEBUG=1` to print the tool definitions sent to the model; anything else leaves it off.
 
 Then:
 

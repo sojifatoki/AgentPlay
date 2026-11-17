@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-MODEL = os.getenv("MODEL", "openai/gpt-4o-mini")
+MODEL = os.getenv("MODEL", "openai/gpt-4o-mini") #default LLM provider openai/gpt-4o-mini
 DEBUG = os.getenv("DEBUG") == "1"
 
 
