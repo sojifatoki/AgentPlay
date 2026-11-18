@@ -13,7 +13,7 @@ There are two tools right now. `search_web` is built on Tavily. It takes a query
 ## What's in the repo
 
 - `simple_agent_loop.py` is the loop. `run_agent(question)` is the whole agent.
-- `tool_registry.py` has the `@tool` decorator. It also builds the tool definitions the model reads from each function's signature and docstring, and runs a tool by name when the model asks.
+- `tool_registry.py` has the `@tool` decorator. It also builds the tool definitions the model reads from each function's signature and docstring (a `Literal` type hint becomes an `enum` the model is told about), and runs a tool by name when the model asks.
 - `tools.py` is where tools live. `search_web` and `get_current_datetime` for now.
 - `helper.py` has `trim_results`, which cuts Tavily's results down to the fields the model needs. `MAX_CONTENT_CHARACTER_COUNT` sets the snippet length.
 
@@ -28,7 +28,7 @@ def get_word_count(text: str) -> int:
     return len(text.split())
 ```
 
-The docstring is what the model reads to decide when to call it, so write it for the model, not for me.
+The docstring is what the model reads to decide when to call it, so write it for the model.
 
 ## Running it
 
@@ -48,9 +48,10 @@ TAVILY_API_KEY=...
 ANTHROPIC_API_KEY=""
 GEMINI_API_KEY=""
 MODEL=openai/gpt-4o-mini
+DEBUG="0"
 ```
 
-There's a `.env.template` you can copy. `MODEL` is optional and defaults to `openai/gpt-4o-mini`. Set `DEBUG=1` to print the tool definitions sent to the model; anything else leaves it off.
+There's a `.env.template` you can copy. `MODEL` is optional and defaults to `openai/gpt-4o-mini`. Set `DEBUG=1` to print the tool definitions sent to the model; anything else leaves it off. You can also turn it on for a single run without touching `.env`: `DEBUG=1 uv run simple_agent_loop.py`.
 
 Then:
 
@@ -62,7 +63,7 @@ It'll prompt you for a question. The model is set by `MODEL` in your `.env` file
 
 ## Lessons learned
 
-The model only knows what the tool definition tells it. My registry builds that definition from type hints, and anything it doesn't recognize falls back to a plain string. That includes `Literal` and `str | None`. So the model is never told that `topic` has to be general, news or finance. It could send something else and Tavily would reject it. I haven't seen that happen, but nothing stops it. Mapping `Literal` to an enum is the fix.
+The model only knows what the tool definition tells it. My registry builds that definition from type hints, and originally anything it didn't recognize fell back to a plain string. That included `Literal` and `str | None`, so the model was never told that `topic` has to be general, news or finance. It could have sent something else and Tavily would reject it. I never saw that happen, but nothing stopped it. The fix is in `make_tool_definition`: it uses `get_args` to pull the allowed values out of a `Literal` (including one wrapped in `| None`, like `time_range`) and adds them to the definition as an `enum`. Plain types like `str` and `int`, and `str | None` such as `country`, still map to a simple type. Running with `DEBUG=1` shows the `enum` on `topic` and `time_range`. A Python type hint only reaches the model if the registry translates it into the schema. Also, I first tried `time_range: Time_Range = None` to make this easier, but the type checker rightly flags `None` as not part of the `Literal`, so the type hint stays `Time_Range | None` and the registry handles it.
 
 Errors go back to the model as text. Both `search_web` and `run_tool` catch exceptions and return a string instead of crashing, so the model can see what went wrong and try again or explain it. The downside is that a failed search can read like a normal result if the model glosses over it.
 

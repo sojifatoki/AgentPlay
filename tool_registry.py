@@ -1,5 +1,6 @@
 import inspect
 import json
+from typing import get_args
 
 TYPE_MAP = {str: "string", int: "integer", float: "number", bool: "boolean", list: "array", dict: "object"}
 
@@ -16,7 +17,19 @@ def make_tool_definition(func) -> dict:
     required = []
 
     for name, param in sig.parameters.items():
-        properties[name] = {"type": TYPE_MAP.get(param.annotation, "string")}
+        #properties[name] = {"type": TYPE_MAP.get(param.annotation, "string")}
+        values = get_args(param.annotation) #pulls the values out of literal into a tuple
+
+        # "Time_Range | None" holds the Literal as its first item, so look inside it
+        if values and get_args(values[0]):
+            values = get_args(values[0])
+
+        # only treat it as an enum if every item is a plain string value
+        if values and all (isinstance(v, str) for v in values):
+            properties[name] = {"type": "string", "enum": list(values)}
+        else:
+            properties[name] = {"type": TYPE_MAP.get(param.annotation, "string")}
+
         if param.default is inspect.Parameter.empty: #no default -> required
             required.append(name)
 
